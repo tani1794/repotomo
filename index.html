@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RepoTomo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="講義資料をスライドで復習し、レポートの構成と下書き作りを手伝う学習アプリ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="geo" aria-hidden="true"></canvas>
+
+<header class="topbar" id="top">
+  <div class="topbar-in">
+    <a class="brand" href="#hero" aria-label="RepoTomo トップへ">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="brand-name">RepoTomo</span>
+    </a>
+    <nav class="nav" aria-label="メインメニュー">
+      <a href="#library">講義</a>
+      <a href="#deck">スライド</a>
+      <a href="#assist">レポート作成</a>
+      <a href="#folders">フォルダ</a>
+      <a href="#calendar">カレンダー</a>
+    </nav>
+    <button class="icon-btn" id="bellBtn" type="button" aria-label="通知を開く">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6zm0 19a3 3 0 0 0 3-3H9a3 3 0 0 0 3 3z"/></svg>
+      <span class="badge" id="bellBadge" hidden>0</span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="band" id="hero" data-tone="1">
+    <div class="wrap hero">
+      <div class="hero-copy">
+        <p class="eyebrow">講義資料から、要点、そしてレポートへ</p>
+        <h1 class="display">講義を、<br><span class="nw">書けるレポートに。</span></h1>
+        <p class="lead">資料をドロップすると、スライドで復習できる形に整理します。そのまま<mark class="hl">論点の整理、レポート案、1000字の下書き</mark>まで進めます。保存したレポートはフォルダで管理し、Word・Excelで書き出せます。</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#assist">レポートを作る</a>
+          <a class="btn ghost" href="#deck">スライドで復習</a>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="art-panel">
+          <canvas id="poly" aria-hidden="true"></canvas>
+          <div class="art-ctrl" role="radiogroup" aria-label="模様の動き">
+            <button type="button" role="radio" aria-checked="true" data-mode="wave">ウェーブ</button>
+            <button type="button" role="radio" aria-checked="false" data-mode="scatter">ばらける</button>
+            <button type="button" role="radio" aria-checked="false" data-mode="magnet">マグネット</button>
+          </div>
+        </div>
+        <div class="next-due" id="nextDue" aria-live="polite">
+          <p class="mono small">次の締切</p>
+          <p class="due-title" id="nextDueTitle">読み込み中…</p>
+          <p class="due-left" id="nextDueLeft"></p>
+        </div>
+        <ul class="stat-row" id="statRow">
+          <li><b id="statLectures">0</b><span>講義</span></li>
+          <li><b id="statReports">0</b><span>レポート</span></li>
+          <li><b id="statTasks">0</b><span>予定</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section class="band" id="library" data-tone="2">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-no" aria-hidden="true">01</span>
+        <p class="eyebrow">講義ライブラリ</p>
+        <h2 class="h2">講義資料を集めて、いつでも見返す</h2>
+        <p class="sec-lead">PDFをここにドロップすると講義として追加されます。大学名や先生の名前は<mark class="hl">自動で伏せ字</mark>になります。</p>
+      </div>
+      <div class="lib-tools">
+        <label class="field compact" for="subjectFilter"><span>科目</span>
+          <select id="subjectFilter"><option value="">すべての科目</option></select>
+        </label>
+      </div>
+      <div class="lib-grid" id="libGrid"></div>
+      <div class="drop" id="libDrop" tabindex="0" role="button" aria-label="講義資料のPDFを追加">
+        <div class="drop-shape" aria-hidden="true"><i></i><i></i></div>
+        <p><b>講義資料をドロップ</b><br><span class="muted">PDF・テキスト／クリックして選択</span></p>
+        <input type="file" id="libFile" accept=".pdf,.txt,.md" hidden>
+      </div>
+    </div>
+  </section>
+
+  <!-- DECK -->
+  <section class="band" id="deck" data-tone="3">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-no" aria-hidden="true">02</span>
+        <p class="eyebrow">スライド</p>
+        <h2 class="h2" id="deckHeading">スライドで復習する</h2>
+        <p class="sec-lead">矢印キー・スワイプでめくれます。アニメーションは3種類から選べます。</p>
+      </div>
+      <div class="deck-bar">
+        <label class="field compact" for="deckSelect"><span>講義</span><select id="deckSelect"></select></label>
+        <div class="seg" role="radiogroup" aria-label="切り替え効果">
+          <button type="button" role="radio" aria-checked="true" data-fx="slide">スライドイン</button>
+          <button type="button" role="radio" aria-checked="false" data-fx="fade">フェード</button>
+          <button type="button" role="radio" aria-checked="false" data-fx="zoom">ズーム</button>
+        </div>
+      </div>
+      <div class="stage-wrap">
+        <div class="stage" id="stage" tabindex="0" aria-roledescription="スライド" aria-live="polite"></div>
+        <div class="stage-ctrl">
+          <button class="icon-btn" id="prevSlide" type="button" aria-label="前のスライド"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+          <div class="dots" id="dots"></div>
+          <span class="mono small" id="pageNo">1 / 1</span>
+          <button class="icon-btn" id="playSlide" type="button" aria-label="自動再生"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+          <button class="icon-btn" id="fullSlide" type="button" aria-label="全画面"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+          <button class="icon-btn" id="nextSlide" type="button" aria-label="次のスライド"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+        </div>
+      </div>
+      <div class="points" id="keyPoints"></div>
+    </div>
+  </section>
+
+  <!-- ASSIST -->
+  <section class="band" id="assist" data-tone="4">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-no" aria-hidden="true">03</span>
+        <p class="eyebrow">レポート作成アシスタント</p>
+        <h2 class="h2">資料から、レポートの下書きまで</h2>
+        <p class="sec-lead">今日の資料を読み込み、段階を追って分析し、整理した内容とレポート案、1000字の下書きを出します。</p>
+      </div>
+
+      <ol class="steps-nav" id="stepsNav">
+        <li class="on">資料</li><li>条件</li><li>分析</li><li>レポート案</li><li>下書き</li>
+      </ol>
+
+      <div class="assist-grid">
+        <div class="panel" id="panelSource">
+          <h3 class="h3">1. 今日の講義資料</h3>
+          <div class="drop small-drop" id="assistDrop" tabindex="0" role="button" aria-label="講義資料をアップロード">
+            <p><b>PDFをドロップ</b> またはクリック</p>
+            <input type="file" id="assistFile" accept=".pdf,.txt,.md" hidden>
+          </div>
+          <p class="or">または、ライブラリから選ぶ</p>
+          <label class="field" for="assistLecture"><span>講義</span><select id="assistLecture"></select></label>
+          <p class="src-note" id="srcNote"></p>
+        </div>
+
+        <div class="panel" id="panelCond">
+          <h3 class="h3">2. 書く条件</h3>
+          <div class="cond-grid">
+            <label class="field" for="condType"><span>レポートの種類</span>
+              <select id="condType">
+                <option value="assignment">資料の課題に答える</option>
+                <option value="reflection">感想・考えたこと</option>
+                <option value="analysis">企業や事例の分析</option>
+              </select>
+            </label>
+            <label class="field" for="condChars"><span>文字数</span>
+              <input id="condChars" type="number" min="200" max="4000" step="50" value="1000">
+            </label>
+          </div>
+          <label class="field" for="condTopic"><span>テーマ・課題文（空欄なら資料から自動で探します）</span>
+            <textarea id="condTopic" rows="2" placeholder="例：王将フードサービスの現状・課題・今後の展望を顧客視点で述べよ"></textarea>
+          </label>
+          <label class="field" for="condExp"><span>使いたい自分の体験（任意）</span>
+            <textarea id="condExp" rows="2" placeholder="例：部活帰りに友達と餃子の王将によく行く。値上げに気づいたが通い続けている"></textarea>
+          </label>
+          <fieldset class="checks">
+            <legend>書き方のルール</legend>
+            <label><input type="checkbox" id="ruleStudent" checked> 学生の立場で書く（経営者目線にしない）</label>
+            <label><input type="checkbox" id="ruleSoft" checked> 言い切らない（〜と考えた・〜かもしれない）</label>
+            <label><input type="checkbox" id="ruleSourceOnly"> 講義資料の情報だけを使う</label>
+            <label><input type="checkbox" id="ruleFeel" checked> 「感じた」「考えた」を中心にする</label>
+          </fieldset>
+          <div class="engine" id="engineBox">
+            <p class="mono small">分析エンジン</p>
+            <p id="engineLabel">確認中…</p>
+            <details id="apiKeyBox" hidden>
+              <summary>Claude APIキーを使う（GitHub版）</summary>
+              <label class="field" for="apiKey"><span>APIキー（このブラウザにだけ保存）</span>
+                <input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-...">
+              </label>
+              <label class="field" for="apiModel"><span>モデル</span>
+                <input id="apiModel" type="text" value="claude-sonnet-5-5">
+              </label>
+              <button class="btn small" type="button" id="saveKey">保存</button>
+            </details>
+          </div>
+          <button class="btn primary wide" type="button" id="runAnalyze">分析をはじめる</button>
+        </div>
+      </div>
+
+      <div class="panel think" id="panelThink" hidden>
+        <div class="think-head">
+          <h3 class="h3">3. 分析のステップ</h3>
+          <span class="progress" aria-hidden="true"></span>
+          <button class="btn small ghost" type="button" id="stopAnalyze">止める</button>
+        </div>
+        <ol class="think-list" id="thinkList"></ol>
+      </div>
+
+      <div class="panel" id="panelResult" hidden>
+        <h3 class="h3">整理した内容</h3>
+        <div class="result" id="resultBox"></div>
+      </div>
+
+      <div class="panel" id="panelProposals" hidden>
+        <h3 class="h3">4. こんなレポート案があります</h3>
+        <div class="proposals" id="proposals"></div>
+      </div>
+
+      <div class="panel" id="panelDraft" hidden>
+        <div class="draft-head">
+          <h3 class="h3">5. 下書き</h3>
+          <span class="count mono" id="charCount">0字</span>
+        </div>
+        <label class="field" for="draftTitle"><span>タイトル</span><input id="draftTitle" type="text"></label>
+        <label class="field" for="draftBody"><span>本文（自由に直せます）</span><textarea id="draftBody" rows="16"></textarea></label>
+        <p class="draft-note" id="draftNote"></p>
+        <div class="draft-actions">
+          <label class="field compact" for="saveFolder"><span>保存先</span><select id="saveFolder"></select></label>
+          <button class="btn primary" type="button" id="saveDraft">フォルダに保存</button>
+          <button class="btn ghost" type="button" id="exportDocx">Word</button>
+          <button class="btn ghost" type="button" id="exportXlsx">Excel</button>
+          <button class="btn ghost" type="button" id="copyDraft">コピー</button>
+          <button class="btn ghost" type="button" id="regenDraft">書き直す</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOLDERS -->
+  <section class="band" id="folders" data-tone="5">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-no" aria-hidden="true">04</span>
+        <p class="eyebrow">フォルダ</p>
+        <h2 class="h2">作ったレポートを整理する</h2>
+        <p class="sec-lead">科目ごとにフォルダを作って保存できます。Word（.docx）とExcel（.xlsx）で書き出せます。</p>
+      </div>
+      <div class="folder-layout">
+        <aside class="folder-side">
+          <ul class="folder-list" id="folderList"></ul>
+          <form class="new-folder" id="newFolderForm">
+            <label class="sr" for="newFolderName">新しいフォルダ名</label>
+            <input id="newFolderName" type="text" placeholder="新しいフォルダ" maxlength="30">
+            <button class="btn small" type="submit">作成</button>
+          </form>
+        </aside>
+        <div class="folder-main">
+          <div class="report-list" id="reportList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section class="band" id="calendar" data-tone="6">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sec-no" aria-hidden="true">05</span>
+        <p class="eyebrow">カレンダー</p>
+        <h2 class="h2">締切を色分けして忘れない</h2>
+        <p class="sec-lead">課題を色付きで登録すると、締切が近づいたときに通知します。Googleカレンダーへの追加と、ほかのカレンダー用のファイル書き出しにも対応しています。</p>
+      </div>
+      <div class="cal-layout">
+        <div class="cal">
+          <div class="cal-head">
+            <button class="icon-btn" id="calPrev" type="button" aria-label="前の月"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+            <p class="cal-month" id="calMonth"></p>
+            <button class="icon-btn" id="calNext" type="button" aria-label="次の月"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+          </div>
+          <div class="cal-week" aria-hidden="true"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+        <div class="cal-side">
+          <form class="panel task-form" id="taskForm">
+            <h3 class="h3">予定を追加</h3>
+            <label class="field" for="taskTitle"><span>やること</span><input id="taskTitle" type="text" required placeholder="例：王将フードサービスのレポート提出"></label>
+            <div class="cond-grid">
+              <label class="field" for="taskDate"><span>日付</span><input id="taskDate" type="date" required></label>
+              <label class="field" for="taskTime"><span>時刻</span><input id="taskTime" type="time" value="22:00"></label>
+            </div>
+            <label class="field" for="taskSubject"><span>科目</span><input id="taskSubject" type="text" placeholder="例：マーケティング戦略論" list="subjectList"></label>
+            <datalist id="subjectList"></datalist>
+            <div class="colors" role="radiogroup" aria-label="色" id="colorPick"></div>
+            <button class="btn primary wide" type="submit">カレンダーに保存</button>
+          </form>
+          <div class="upcoming" id="upcoming"></div>
+          <div class="cal-sync">
+            <button class="btn ghost small" type="button" id="exportIcs">すべての予定を書き出す（.ics）</button>
+            <button class="btn ghost small" type="button" id="enableNotify">ブラウザ通知をオンにする</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <p><b>RepoTomo</b> — 講義の復習とレポート作りの相棒</p>
+    <div class="foot-actions">
+      <button class="btn ghost small" type="button" id="backupBtn">データをバックアップ</button>
+      <label class="btn ghost small" for="restoreFile">バックアップから戻す</label>
+      <input type="file" id="restoreFile" accept=".json" hidden>
+    </div>
+    <p class="muted small" id="storageNote"></p>
+  </div>
+</footer>
+
+<!-- notifications drawer -->
+<aside class="drawer" id="drawer" hidden aria-label="通知">
+  <div class="drawer-head"><h3 class="h3">通知</h3><button class="btn small ghost" type="button" id="closeDrawer">閉じる</button></div>
+  <ul class="notes" id="notes"></ul>
+</aside>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<!-- 読み込み中に流れ込むオプアート -->
+<div class="opart" id="opart" hidden>
+  <canvas id="opartCanvas" aria-hidden="true"></canvas>
+  <div class="opart-msg" role="status" aria-live="polite">
+    <p class="loader-kind" id="opartKind">読み込み中</p>
+    <p id="opartText">読み込み中…</p>
+  </div>
+</div>
+
+<!-- report viewer -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <input id="modalTitle" class="modal-title" type="text" aria-label="タイトル">
+      <button class="btn small ghost" type="button" id="modalClose">閉じる</button>
+    </div>
+    <p class="mono small" id="modalMeta"></p>
+    <label class="sr" for="modalBody">本文</label>
+    <textarea id="modalBody" rows="14"></textarea>
+    <div class="modal-actions">
+      <label class="field compact" for="modalFolder"><span>フォルダ</span><select id="modalFolder"></select></label>
+      <button class="btn primary small" type="button" id="modalSave">変更を保存</button>
+      <button class="btn ghost small" type="button" id="modalDocx">Word</button>
+      <button class="btn ghost small" type="button" id="modalXlsx">Excel</button>
+      <button class="btn ghost small danger" type="button" id="modalDelete">削除</button>
+    </div>
+    <p class="confirm" id="modalConfirm" hidden>本当に削除しますか？ <button class="btn small danger" type="button" id="modalDeleteYes">削除する</button> <button class="btn small ghost" type="button" id="modalDeleteNo">やめる</button></p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="js/lectures.js"></script>
+<script src="js/store.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
